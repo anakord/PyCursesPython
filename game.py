@@ -6,12 +6,13 @@
 
 # Подключение модуля графики
 import view
-# Подключения стартера режима curses
-from curses import wrapper as starter
 
 # Пуск игры
-def play_game(stdscr):    
-        
+def play_game():    
+    
+    # Инициализация отрисовщика
+    viewer = view.Display()
+    
     KEY_RESTART = ord('r') # Код клавиши перезапуска
     KEY_QUIT = 32; # Код клавиши "Пробел"
     
@@ -19,13 +20,15 @@ def play_game(stdscr):
                  
     while key != KEY_QUIT: # Не нажата клавиша выхода 
         
-        view.draw_game(stdscr) # Отрисовка поля и надписей
+        screen = viewer.draw_game() # Отрисовка поля и надписей
         
-        key = stdscr.getch()  # Ожидание нажатия клавиши
+        key = screen.getch()  # Ожидание нажатия клавиши
+        
+    viewer.clear_game() # Стирает все игровые настройки
 
 # Запуск игры
 def main():
-    starter(play_game)
+    play_game() 
 
 if __name__ == "__main__":
     main()
