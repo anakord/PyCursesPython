@@ -2,6 +2,7 @@
 
 # Файл: view.py
 # Содержит описание функций вывода игрового поля на консоль
+# Реализация функций в классе Display
 # с использованием библиотеки curses
 
 # Использование Unicode для русского вывода
@@ -10,6 +11,7 @@ locale.setlocale(locale.LC_ALL, '')
 code = locale.getpreferredencoding()
 
 import curses # Библиотека для псевдографики
+import snake # Библиотека для определения положения змейки
 
 # Класс: Display
 # Содержит поля и методы для отображения игры
@@ -18,11 +20,16 @@ import curses # Библиотека для псевдографики
 #   _draw_error: отрисовка окна ошибки
 #   _draw_info: отрисовка информационных надписей
 #   _draw_border: отрисовка границы
+#   _draw_snake(snake): отрисовывает полученную змейку
 #  clear_game: стирает игровое поле и возращает к настройкам ОС
-class Display(object):
+class Display():
      
     # Константы минимального размера консоли
     MIN_X = 44; MIN_Y = 8 
+    
+    # Константы отступов при отрисовке границ игрового поля
+    LEFT_INDENT_X = 0; RIGHT_INDENT_X = 1
+    UP_INDENT_Y   = 1; DOWN_INDENT_Y = 4
     
     # Поле экрана для методов отрисовки
     screen = curses.initscr()
@@ -30,7 +37,7 @@ class Display(object):
     # Текущие размеры экрана
     height, width = screen.getmaxyx()
     
-    def __init__(self):
+    def __init__(self, st_snake):
         # Настройка ввода
         curses.curs_set(False) # Сокрытие курсора
         self.screen.keypad(True)
@@ -42,8 +49,6 @@ class Display(object):
         # Обычные надписи
         curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
         curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
-        
-        #Первонача
         
     # Функция вывода ошибки на случай, если терминал сильно сжат
     def _draw_error(self):
@@ -71,30 +76,33 @@ class Display(object):
         self.screen.attron(curses.color_pair(1)) # Режим вывода текста
         
         # Вывод количества очков
-        str_point = u"Очки " + str(points)
+        str_point = u"Очки: " + str(points -1) # Голова не учитывается 
         self.screen.addstr(0, self.width-len(str_point), # Вывод справа 
                       str_point.encode('utf-8'));
         
         # Вывод подсказкок внизу экрана
-        self.screen.addstr(self.height-3, 0, "P - пауза") 
+        self.screen.addstr(self.height-3, 0, "WASD - управление; P - пауза") 
         self.screen.addstr(self.height-2, 0, "R - перезапуск") 
         self.screen.addstr(self.height-1, 0, "Для выхода нажмите <SPACE>")    
         
         self.screen.attroff(curses.color_pair(1))
-        
-        # Возврат количества занятых строк снизу
-        return 3
         
     # Функция отрисовки границы игрового поля 
     # std-решение border не поддерживает пользовательского расположения 
     # x1, y1 - координаты первой вершины границы 
     # x2, y2 - координаты второй вершины границы 
     ## Реализовать как перегрузку метода
-    def _draw_border(self, x1, y1, x2, y2):
+    def _draw_border(self):
         # Константы символов границы
         CH_TLCORNER = '╔'; CH_TRCORNER = '╗' 
         CH_HORLINE = '═'; CH_VERTLINE = '║'
         CH_BLCORNER = '╚'; CH_BRCORNER = '╝'
+        
+        # Получение координат отрисовки границ 
+        x1 = self.LEFT_INDENT_X; 
+        y1 = self.UP_INDENT_Y     
+        x2 = self.width - self.RIGHT_INDENT_X
+        y2 = self.height - self.DOWN_INDENT_Y
         
         # Отрисовка углов
         self.screen.addstr(y1,x1, CH_TLCORNER)
@@ -109,44 +117,79 @@ class Display(object):
         for y in range(y1+1, y2): # Вертикальные линии
             self.screen.addstr(y,x1, CH_VERTLINE)
             self.screen.addstr(y,x2, CH_VERTLINE)
-    
-    # Функция определения изменения размера экрана
-    ## Пока не используется
-    def _is_resized(self):
-        buf_y, buf_x = self.screen.getmaxyx()
-        return self.width != buf_x and self.height != buf_y
-
-    # Основная функция отрисовки 
-    def draw_game(self):
         
+        # Изменение объекта st_snake из модуля графики ?!
+        # Установка нового размера змейки
+    
+    # Функция отрисовки змейки
+    # st_snake - текущее состояние (status) змейки
+    def _draw_snake(self, st_snake):
+    
+        # Символы изображения головы змейки
+        # в зависимости от направления движения
+        СH_HEAD_LEFT = "ᐊ"; СH_HEAD_RIGHT = "ᐅ"
+        СH_HEAD_UP = "ᐃ"; СH_HEAD_DOWN = "ᐁ"
+        # Символ изображения тела
+        CH_BODY = "◯"
+        
+        # Перевод координат змейки в координаты поля
+        # Отступ границы слева
+        pos_x = st_snake.get_headX() + self.LEFT_INDENT_X 
+        # Отступ надписи "Очки ..." + граница сверху
+        pos_y = st_snake.get_headY() + self.UP_INDENT_Y 
+        # Уточнение текущего направления головы
+        cur_direction = st_snake.get_direction()
+        
+        # Отрисовка головы 
+        if cur_direction == st_snake.Direction.LEFT:
+            self.screen.addstr(pos_y, pos_x, СH_HEAD_LEFT)
+        elif cur_direction == st_snake.Direction.RIGHT:
+            self.screen.addstr(pos_y, pos_x, СH_HEAD_RIGHT)
+        elif cur_direction == st_snake.Direction.UP:
+            self.screen.addstr(pos_y, pos_x, СH_HEAD_UP)
+        elif cur_direction == st_snake.Direction.DOWN:
+            self.screen.addstr(pos_y, pos_x, СH_HEAD_DOWN)                   
+    
+    # Функция вычисления размеров игрового поля
+    def get_borders(self):
+        borderX = self.width-self.RIGHT_INDENT_X
+        borderY = self.height - self.DOWN_INDENT_Y
+        return borderX, borderY 
+               
+    
+    # Основная функция отрисовки 
+    # snake - текущий снимок состояния змейки для отрисовки
+    def draw_game(self, st_snake):
         # Обновление размерности поля
         self.height, self.width = self.screen.getmaxyx()
-        
-        # Очищение, обновление экрана  
+            
+        # Очищение экрана  
         self.screen.clear()
-        self.screen.refresh()
-        
+  
         # Проверка на достаточный размер окна для игры
         if self.width < Display.MIN_X or self.height < Display.MIN_Y:
             self._draw_error()
         else:	        
-            #Отрисовка информационных надписей
-            bottom_indent = self._draw_info(724)
-            #Отрисовка границы
-            self._draw_border(0, 1, 
-                   self.width-1, self.height - (bottom_indent+1))
-
-        self.screen.refresh()  # Обновление изменений
-        
+            # Отрисовка информационных надписей
+            self._draw_info(st_snake.get_size())
+            # Отрисовка границы
+            self._draw_border()
+            # Отрисовка змейки
+            self._draw_snake(st_snake)
+            
+            self.screen.refresh()  # Обновление изменений
+            
         # Возврат отрисованного экрана
         return self.screen 
         
-    # Функция стирания интерфейса и возвращения в cmd
+    # Функция стирания интерфейса и возвращения в режим cmd
     def clear_game(self):
         curses.nocbreak()
         self.screen.keypad(False)
         curses.echo()
         curses.endwin()
+        
+
 
 
 
