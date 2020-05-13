@@ -22,10 +22,11 @@ class Snake():
         _d_info = namedtuple('DiractionInfo', ['dx', 'dy']) 
 		
         # Перечисление всех 4 направлений
+        # Для координат от верхнего левого угла
         LEFT = _d_info(-1, 0)
         RIGHT = _d_info(+1, 0)
-        UP = _d_info(0, +1) 
-        DOWN = _d_info(0, -1)
+        UP = _d_info(0, -1) 
+        DOWN = _d_info(0, +1)
     
     # Стартовое направление змейки
     _start_direction = Direction.RIGHT    
@@ -70,8 +71,8 @@ class Snake():
     
     # Функция 1 шага змейки
     def make_step(self):
-        self.headX = self.headX + self._cur_direction.value.dx
-        self.headY = self.headY + self._cur_direction.value.dy
+        self._headX = self._headX + self._cur_direction.value.dx
+        self._headY = self._headY + self._cur_direction.value.dy
         
     # Первоначальные настройки
     def restart(self):

@@ -8,25 +8,27 @@
 import view
 # Подключение модуля поведения змейки
 import snake
+# Подключение модуля работы со временем
+import time
+# Подключение потока
+from threading import Thread
 
 # Пуск игры
 def play_game():    
     # Инициализация змейки
     player_snake = snake.Snake()
-    
     # Инициализация отрисовщика
     viewer = view.Display(player_snake)
     # Передача отрисованного в Model (Snake)
     player_snake.set_borders(*viewer.get_borders())
-    
     # Установка начального положения
     player_snake.restart()
-    
+    # Первая отрисовка
+    screen = viewer.draw_game(player_snake)
     
     # Клавиши управления
     KEY_RESTART = ord('r') # Код клавиши перезапуска
     KEY_QUIT = 32; # Код клавиши "Пробел"
-    
     # Клавиши изменения направления
     KEY_UP    = ord('w');
     KEY_LEFT  = ord('a'); 
@@ -40,9 +42,8 @@ def play_game():
         # Нажата клавиша перезапуска
         if(key == KEY_RESTART):
             player_snake.restart()
-            
         # Изменяется направление змейки
-        if(key == KEY_LEFT):
+        elif(key == KEY_LEFT):
             player_snake.change_direction(player_snake.Direction.LEFT)
         elif(key == KEY_RIGHT):
             player_snake.change_direction(player_snake.Direction.RIGHT)
@@ -50,12 +51,15 @@ def play_game():
             player_snake.change_direction(player_snake.Direction.UP)
         elif(key == KEY_DOWN):
             player_snake.change_direction(player_snake.Direction.DOWN)
-        
-        # Возврат объекта window для управления после отрисовки
-        screen = viewer.draw_game(player_snake) # Отрисовка кадра
+
         # Получение размера отрисованного поля змейкой
         player_snake.set_borders(*viewer.get_borders())
-        
+            
+        # Змейка делает шаг
+        player_snake.make_step()
+
+        viewer.draw_game(player_snake) # Отрисовка кадра
+            
         key = screen.getch()  # Ожидание нажатия клавиши
         
     viewer.clear_game() # Стирает все игровые настройки
