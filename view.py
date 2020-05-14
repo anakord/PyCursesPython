@@ -33,11 +33,11 @@ class Display():
     
     # Поле экрана для методов отрисовки
     screen = curses.initscr()
-    
     # Текущие размеры экрана
     height, width = screen.getmaxyx()
     
     def __init__(self, st_snake):
+        
         # Настройка ввода
         curses.curs_set(False) # Сокрытие курсора
         self.screen.keypad(True)
@@ -49,6 +49,11 @@ class Display():
         # Обычные надписи
         curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
         curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
+        
+        # Обновление размерности поля
+        self.height, self.width = self.screen.getmaxyx()
+        # Получение размера отрисованного поля змейкой
+        st_snake.set_borders(*self.get_borders())
         
     # Функция вывода ошибки на случай, если терминал сильно сжат
     def _draw_error(self):
@@ -124,14 +129,17 @@ class Display():
     # Функция отрисовки змейки
     # st_snake - текущее состояние (status) змейки
     def _draw_snake(self, st_snake):
-    
         # Символы изображения головы змейки
         # в зависимости от направления движения
-        СH_HEAD_LEFT = "ᐊ"; СH_HEAD_RIGHT = "ᐅ"
-        СH_HEAD_UP = "ᐃ"; СH_HEAD_DOWN = "ᐁ"
+        СH_HEAD_LEFT = "ᐊ" 
+        СH_HEAD_RIGHT = "ᐅ"
+        CH_HEAD_UP = "ᐃ"
+        СH_HEAD_DOWN = "ᐁ"
+        CH_HEAD_DEAD = "✠"
         # Символ изображения тела
-        CH_BODY = "◯"
-        
+        CH_BODY = "◯" 
+        CH_HEAD = СH_HEAD_RIGHT
+  
         # Перевод координат змейки в координаты поля
         # Отступ границы слева
         pos_x = st_snake.get_headX() + self.LEFT_INDENT_X 
@@ -141,28 +149,39 @@ class Display():
         cur_direction = st_snake.get_direction()
         
         # Отрисовка головы 
-        if cur_direction == st_snake.Direction.LEFT:
-            self.screen.addstr(pos_y, pos_x, СH_HEAD_LEFT)
-        elif cur_direction == st_snake.Direction.RIGHT:
-            self.screen.addstr(pos_y, pos_x, СH_HEAD_RIGHT)
-        elif cur_direction == st_snake.Direction.UP:
-            self.screen.addstr(pos_y, pos_x, СH_HEAD_UP)
-        elif cur_direction == st_snake.Direction.DOWN:
-            self.screen.addstr(pos_y, pos_x, СH_HEAD_DOWN)                   
+        if cur_direction == st_snake.Direction.LEFT: 
+            CH_HEAD = СH_HEAD_LEFT
+        elif cur_direction == st_snake.Direction.RIGHT: 
+            CH_HEAD = СH_HEAD_RIGHT
+        elif cur_direction == st_snake.Direction.UP: 
+            CH_HEAD = CH_HEAD_UP
+        elif cur_direction == st_snake.Direction.DOWN: 
+            CH_HEAD = СH_HEAD_DOWN
+        # Если проигрыш - нарисовать мертвую голову
+        if st_snake.is_gameover():
+            CH_HEAD = CH_HEAD_DEAD
+    
+        # Отрисовка головы
+        self.screen.addstr(pos_y, pos_x, CH_HEAD)
     
     # Функция вычисления размеров игрового поля
     def get_borders(self):
-        borderX = self.width-self.RIGHT_INDENT_X
-        borderY = self.height - self.DOWN_INDENT_Y
+        borderX = self.width \
+          - (self.LEFT_INDENT_X + self.RIGHT_INDENT_X)
+        borderY = self.height \
+          - (self.UP_INDENT_Y + self.DOWN_INDENT_Y)
         return borderX, borderY 
                
     
     # Основная функция отрисовки 
     # snake - текущий снимок состояния змейки для отрисовки
     def draw_game(self, st_snake):
+        
         # Обновление размерности поля
         self.height, self.width = self.screen.getmaxyx()
-            
+        # Получение размера отрисованного поля змейкой
+        st_snake.set_borders(*self.get_borders())
+        
         # Очищение экрана  
         self.screen.clear()
   

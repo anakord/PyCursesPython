@@ -67,12 +67,24 @@ class Snake():
         
     # Функция изменения направления змейки
     def change_direction(self, direction):
-        self._cur_direction = direction
+        # Запрет на изменение движения на противоположное
+        if self._cur_direction.value.dx * direction.value.dx != -1 \
+        and self._cur_direction.value.dy * direction.value.dy != -1:
+            self._cur_direction = direction
     
     # Функция 1 шага змейки
     def make_step(self):
         self._headX = self._headX + self._cur_direction.value.dx
         self._headY = self._headY + self._cur_direction.value.dy
+    
+    # Функция проверки на проигрыш  
+    # Возвращает:
+    #  True - змейка врезалась
+    #  False - все нормально  
+    def is_gameover(self):
+        # Проверка по границе
+        return self._headX == 0 or self._headX == self._borderX \
+            or self._headY == 0 or self._headY == self._borderY
         
     # Первоначальные настройки
     def restart(self):
