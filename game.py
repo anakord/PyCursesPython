@@ -69,10 +69,12 @@ class Controller():
                 self._set_direction()
                 # Змейка делает шаг
                 self.player_snake.make_step()
-                
-            self.viewer.draw_game(self.player_snake) # Отрисовка кадра
-
-        self.viewer.clear_game() # Стирает все игровые настройки
+            
+            # Отрисовка кадра    
+            self.viewer.draw_game(self.player_snake) 
+        
+        # Стирает все игровые настройки
+        self.viewer.clear_game() 
 
 # Запуск игры
 def main():

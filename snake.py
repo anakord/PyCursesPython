@@ -31,19 +31,23 @@ class Snake():
     # Стартовое направление змейки
     _start_direction = Direction.RIGHT    
     
-    # Текущее направление змейки
-        
+    # Координаты тела змейки в списке
+    # Хранятся в виде [[x1,y1],[x2,y2],...]
+    _body = []
+    
+    # Координаты расположения еды на поле
+    # Хранятся в виде [[x1,y1],[x2,y2],...]
+    _food = []
+    
     # Размер змейки (изначально 1)
     _size = 1
-    
-    # Текущее положение головы змейки
-    _headX = 0 
-    _headY = 0
-    
+
     # Границы игрового поля (по умолчанию)
-    _borderX = 0 
-    _borderY = 0
-    
+    _borderX = 80; _borderY = 24
+        
+    # Текущее положение головы змейки
+    _headX = 0; _headY = 0
+
     # Функциии get_headX(), get_headY()
     # Получение текущего положения головы змейки по X и Y, соответственно
     def get_headX(self):
@@ -51,6 +55,10 @@ class Snake():
     def get_headY(self):
         return self._headY
 
+    # Функция получения тела змейки в виде [x, y]
+    def get_body(self):
+        return self._body
+        
     # Функция получения размера змейки
     def get_size(self):
         return self._size
@@ -74,9 +82,18 @@ class Snake():
     
     # Функция 1 шага змейки
     def make_step(self):
+        # Добавить тело на место продвинувшейся головы
+        self._body.append([self._headX, self._headY])
+        # Удалить единичный участок тела с конца
+        del self._body[0]
+        # Изменить положение головы
         self._headX = self._headX + self._cur_direction.value.dx
         self._headY = self._headY + self._cur_direction.value.dy
     
+    # Функция добавления тела при съедении
+    def eat(self):
+        self._body.append([self._headX, self._headY])
+        
     # Функция проверки на проигрыш  
     # Возвращает:
     #  True - змейка врезалась
@@ -88,10 +105,15 @@ class Snake():
         
     # Первоначальные настройки
     def restart(self):
+        # Стирание тела
+        self._body.clear()
+    
         # Централизация головы змейки
         self._headX = self._borderX // 2
         self._headY = self._borderY // 2
         # Установка начального направления
         self._cur_direction = self._start_direction
+        
         # Обнуление очков
         self._size = 1
+        

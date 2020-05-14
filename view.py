@@ -131,13 +131,12 @@ class Display():
     def _draw_snake(self, st_snake):
         # Символы изображения головы змейки
         # в зависимости от направления движения
-        СH_HEAD_LEFT = "ᐊ" 
-        СH_HEAD_RIGHT = "ᐅ"
-        CH_HEAD_UP = "ᐃ"
-        СH_HEAD_DOWN = "ᐁ"
+        СH_HEAD_LEFT = "ᐊ"; СH_HEAD_RIGHT = "ᐅ"
+        CH_HEAD_UP = "ᐃ"; СH_HEAD_DOWN = "ᐁ"
         CH_HEAD_DEAD = "✠"
         # Символ изображения тела
-        CH_BODY = "◯" 
+        CH_BODY = "#" 
+        
         CH_HEAD = СH_HEAD_RIGHT
   
         # Перевод координат змейки в координаты поля
@@ -163,7 +162,15 @@ class Display():
     
         # Отрисовка головы
         self.screen.addstr(pos_y, pos_x, CH_HEAD)
-    
+        # Отрисовка тела
+        body = tuple(st_snake.get_body())
+        for XY_pair in body: # Проход всех пар XY
+            # Получение координат головы
+            # и перевод их в координаты окна
+            pos_x = XY_pair[0] + self.LEFT_INDENT_X 
+            pos_y = XY_pair[1]+ self.UP_INDENT_Y
+            self.screen.addstr(pos_y, pos_x, CH_BODY)
+            
     # Функция вычисления размеров игрового поля
     def get_borders(self):
         borderX = self.width \
