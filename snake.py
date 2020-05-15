@@ -3,9 +3,11 @@
 # Файл: snake.py
 # Содержит класс Snake, описывающий состояние и логику змейки
 
-# Подключение именованных кортежей
+# Подключение именованных кортежей и перечислений
 from collections import namedtuple
 import enum
+# Подключение рандома
+import random
 
 # Класс: snake.py
 # Описивает поведение змейки, коллизии с границами, телом и едой
@@ -39,9 +41,6 @@ class Snake():
     # Хранятся в виде [[x1,y1],[x2,y2],...]
     _food = []
     
-    # Размер змейки (изначально 1)
-    _size = 1
-
     # Границы игрового поля (по умолчанию)
     _borderX = 80; _borderY = 24
         
@@ -58,10 +57,14 @@ class Snake():
     # Функция получения тела змейки в виде [x, y]
     def get_body(self):
         return self._body
+    
+    # Функция получения позиции еды
+    def get_food_pos(self):
+        return self._food
         
     # Функция получения размера змейки
     def get_size(self):
-        return self._size
+        return len(self._body)
         
     # Функция получения текущего направления движения
     def get_direction(self):
@@ -76,8 +79,8 @@ class Snake():
     # Функция изменения направления змейки
     def change_direction(self, direction):
         # Запрет на изменение движения на противоположное
-        if self._cur_direction.value.dx * direction.value.dx != -1 \
-        and self._cur_direction.value.dy * direction.value.dy != -1:
+        if self._cur_direction.value.dx != -direction.value.dx \
+        and self._cur_direction.value.dy != direction.value.dy:
             self._cur_direction = direction
     
     # Функция 1 шага змейки
@@ -90,30 +93,53 @@ class Snake():
         self._headX = self._headX + self._cur_direction.value.dx
         self._headY = self._headY + self._cur_direction.value.dy
     
+    # Функция спавна еды
+    def food_spawn(self):
+        random.seed()
+        self._food.clear() # Убрать старую еду
+        # Рандомизация места 
+        # От начала поля минус 1 клетка границы
+        spawnX = random.randint(1, self._borderX-1) 
+        spawnY = random.randint(1, self._borderY-1)
+        # Если рандомизация совпала с телом - повторить
+        while [spawnX, spawnY] in self._body and \
+              [spawnX, spawnY] in [self._headX, self._headY]:
+            spawnX = random.randint(1, self._borderX)
+            spawnY = random.randint(1, self._borderY)
+        self._food.append([spawnX, spawnY])
+        
     # Функция добавления тела при съедении
     def eat(self):
-        self._body.append([self._headX, self._headY])
-        
+        self._body.append([self._headX - self._cur_direction.value.dx, 
+                           self._headY - self._cur_direction.value.dy])
+    
+    # Функция возвращает, съела ли змейка фрукт
+    def is_eaten(self):
+        return [self._headX, self._headY] in self._food 
+    
     # Функция проверки на проигрыш  
     # Возвращает:
     #  True - змейка врезалась
     #  False - все нормально  
     def is_gameover(self):
-        # Проверка по границе
+        # Проверка по границе и проверка по коллизии с телом
         return self._headX == 0 or self._headX == self._borderX \
-            or self._headY == 0 or self._headY == self._borderY
+            or self._headY == 0 or self._headY == self._borderY \
+            or [self._headX, self._headY] in self._body  
+
         
     # Первоначальные настройки
     def restart(self):
-        # Стирание тела
+        # Стирание тела и еды на поле
         self._body.clear()
-    
+        self._food.clear()
         # Централизация головы змейки
         self._headX = self._borderX // 2
         self._headY = self._borderY // 2
         # Установка начального направления
         self._cur_direction = self._start_direction
         
-        # Обнуление очков
-        self._size = 1
+        # Респавн еды
+        self.food_spawn()
+
         

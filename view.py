@@ -57,6 +57,9 @@ class Display():
         
     # Функция вывода ошибки на случай, если терминал сильно сжат
     def _draw_error(self):
+        
+        self.screen.erase()
+        
         # Строка ошибки
         STR_ERR = u"Увеличьте окно терминала!"
         
@@ -81,7 +84,7 @@ class Display():
         self.screen.attron(curses.color_pair(1)) # Режим вывода текста
         
         # Вывод количества очков
-        str_point = u"Очки: " + str(points -1) # Голова не учитывается 
+        str_point = u"Очки: " + str(points) # Голова не учитывается 
         self.screen.addstr(0, self.width-len(str_point), # Вывод справа 
                       str_point.encode('utf-8'));
         
@@ -110,22 +113,33 @@ class Display():
         y2 = self.height - self.DOWN_INDENT_Y
         
         # Отрисовка углов
-        self.screen.addstr(y1,x1, CH_TLCORNER)
-        self.screen.addstr(y2, x1, CH_BLCORNER)
-        self.screen.addstr(y1, x2, CH_TRCORNER)
-        self.screen.addstr(y2, x2, CH_BRCORNER)
+        self.screen.addch(y1,x1, CH_TLCORNER)
+        self.screen.addch(y2, x1, CH_BLCORNER)
+        self.screen.addch(y1, x2, CH_TRCORNER)
+        self.screen.addch(y2, x2, CH_BRCORNER)
         
         # Отрисовка самой границы
         for x in range(x1+1, x2): # Горизонтальные линии
-            self.screen.addstr(y1,x, CH_HORLINE)
-            self.screen.addstr(y2,x, CH_HORLINE)
+            self.screen.addch(y1,x, CH_HORLINE)
+            self.screen.addch(y2,x, CH_HORLINE)
         for y in range(y1+1, y2): # Вертикальные линии
-            self.screen.addstr(y,x1, CH_VERTLINE)
-            self.screen.addstr(y,x2, CH_VERTLINE)
+            self.screen.addch(y,x1, CH_VERTLINE)
+            self.screen.addch(y,x2, CH_VERTLINE)
         
         # Изменение объекта st_snake из модуля графики ?!
         # Установка нового размера змейки
     
+    # Функция отрисовки еды
+    # st_snake - текущее состояние (status) змейки
+    def _draw_food(self, st_snake):
+		
+        CH_FOOD = '*'
+        
+        food = tuple(st_snake.get_food_pos())
+        for [pos_x, pos_y] in food:
+            self.screen.addch(pos_y + self.UP_INDENT_Y,   
+                              pos_x + self.LEFT_INDENT_X, CH_FOOD)
+		
     # Функция отрисовки змейки
     # st_snake - текущее состояние (status) змейки
     def _draw_snake(self, st_snake):
@@ -138,7 +152,15 @@ class Display():
         CH_BODY = "#" 
         
         CH_HEAD = СH_HEAD_RIGHT
-  
+        
+        # Отрисовка тела
+        body = tuple(st_snake.get_body())
+        for [pos_x, pos_y] in body: # Проход всех пар XY
+            # Получение координат головы
+            self.screen.addch(pos_y + self.UP_INDENT_Y,   
+                               pos_x + self.LEFT_INDENT_X, CH_BODY)
+                               
+        # Отрисовка головы
         # Перевод координат змейки в координаты поля
         # Отступ границы слева
         pos_x = st_snake.get_headX() + self.LEFT_INDENT_X 
@@ -146,8 +168,6 @@ class Display():
         pos_y = st_snake.get_headY() + self.UP_INDENT_Y 
         # Уточнение текущего направления головы
         cur_direction = st_snake.get_direction()
-        
-        # Отрисовка головы 
         if cur_direction == st_snake.Direction.LEFT: 
             CH_HEAD = СH_HEAD_LEFT
         elif cur_direction == st_snake.Direction.RIGHT: 
@@ -159,23 +179,13 @@ class Display():
         # Если проигрыш - нарисовать мертвую голову
         if st_snake.is_gameover():
             CH_HEAD = CH_HEAD_DEAD
-    
-        # Отрисовка головы
-        self.screen.addstr(pos_y, pos_x, CH_HEAD)
-        # Отрисовка тела
-        body = tuple(st_snake.get_body())
-        for XY_pair in body: # Проход всех пар XY
-            # Получение координат головы
-            # и перевод их в координаты окна
-            pos_x = XY_pair[0] + self.LEFT_INDENT_X 
-            pos_y = XY_pair[1]+ self.UP_INDENT_Y
-            self.screen.addstr(pos_y, pos_x, CH_BODY)
-            
+        self.screen.addch(pos_y, pos_x, CH_HEAD)        
+        
     # Функция вычисления размеров игрового поля
     def get_borders(self):
-        borderX = self.width \
+        borderX = self.width                  \
           - (self.LEFT_INDENT_X + self.RIGHT_INDENT_X)
-        borderY = self.height \
+        borderY = self.height                 \
           - (self.UP_INDENT_Y + self.DOWN_INDENT_Y)
         return borderX, borderY 
                
@@ -190,18 +200,23 @@ class Display():
         st_snake.set_borders(*self.get_borders())
         
         # Очищение экрана  
-        self.screen.clear()
+        self.screen.erase()
   
         # Проверка на достаточный размер окна для игры
         if self.width < Display.MIN_X or self.height < Display.MIN_Y:
             self._draw_error()
         else:	        
-            # Отрисовка информационных надписей
-            self._draw_info(st_snake.get_size())
-            # Отрисовка границы
-            self._draw_border()
-            # Отрисовка змейки
-            self._draw_snake(st_snake)
+            # Если консоль стала меньше, чем нужно
+            try:
+                # Отрисовка информационных надписей
+                self._draw_info(st_snake.get_size())
+                # Отрисовка границы
+                self._draw_border()
+                # Отрисовка еды
+                self._draw_food(st_snake)
+                # Отрисовка змейки
+                self._draw_snake(st_snake)
+            except: self._draw_error()
             
             self.screen.refresh()  # Обновление изменений
             
